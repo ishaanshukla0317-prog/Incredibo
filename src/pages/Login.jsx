@@ -1,9 +1,11 @@
 import { useState } from "react";
 import api from "../api/axios";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext"; // <-- Imported useAuth
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth(); // <-- Extracted login function
 
   const [view, setView] = useState("login");
 
@@ -37,10 +39,11 @@ export default function Login() {
     try {
       const res = await api.post("/api/auth/login", formData);
 
-      localStorage.setItem("accessToken", res.data.accessToken);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+     
+      login(res.data.accessToken, res.data.user);
 
-      window.location.href = "/";
+
+      navigate("/"); 
     } catch (error) {
       alert(error.response?.data?.message || "Login Failed");
     }

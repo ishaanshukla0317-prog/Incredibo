@@ -1,9 +1,11 @@
 import { useState } from "react";
 import api from "../api/axios";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext"; 
 
 export default function Signup() {
   const navigate = useNavigate();
+  const { login } = useAuth(); 
 
   const [isOtpStep, setIsOtpStep] = useState(false);
   const [otp, setOtp] = useState("");
@@ -53,11 +55,12 @@ export default function Signup() {
       });
 
       if (authData) {
-        localStorage.setItem("accessToken", authData.accessToken);
-        localStorage.setItem("user", JSON.stringify(authData.user));
+
+        login(authData.accessToken, authData.user);
       }
       
-      window.location.href = "/";
+     
+      navigate("/"); 
     } catch (error) {
       alert(
         error.response?.data?.message ||

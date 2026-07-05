@@ -4,6 +4,7 @@ import {
   Camera, MapPin, Landmark, Crown, CalendarDays, ScrollText, Send, Loader2,
   Sparkles, X, Video, Image as ImageIcon, Mic, MicOff, Volume2, Lock
 } from "lucide-react";
+import api from "../api/axios";
 
 const tokens = {
   ink: "#141B2E",
@@ -169,33 +170,25 @@ export default function AI() {
     const formData = new FormData();
     formData.append("image", blob, "capture.jpg");
 
-    const token = localStorage.getItem("accessToken");
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
     try {
-      const response = await fetch(`${API_URL}/api/yatri/detect`, {
-        method: "POST",
+      
+      const response = await api.post("/api/yatri/detect", formData, {
         headers: {
-          "Authorization": `Bearer ${token}`
-        },
-        body: formData,
+          "Content-Type": "multipart/form-data"
+        }
       });
 
-      if (response.status === 401) {
-        setError("Authentication required. Please log in to use Yatri.");
-        setLoading(false);
-        return;
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        setMonumentData(data.data);
+      if (response.data.success) {
+        setMonumentData(response.data.data);
       } else {
-        setError(data.message || "Couldn't identify this monument.");
+        setError(response.data.message || "Couldn't identify this monument.");
       }
     } catch (err) {
-      setError("Couldn't reach the server. Is your backend running?");
+      if (err.response?.status === 401) {
+        setError("Authentication required or session expired. Please log in to use Yatri.");
+      } else {
+        setError("Couldn't reach the server. Is your backend running?");
+      }
     } finally {
       setLoading(false);
     }
@@ -223,31 +216,14 @@ export default function AI() {
     setChatHistory((prev) => [...prev, { role: "user", text: newQuestion }]);
     setChatLoading(true);
 
-    const token = localStorage.getItem("accessToken");
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
     try {
-      const response = await fetch(`${API_URL}/api/yatri/chat`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          monument: monumentRef.current.monument,
-          question: newQuestion,
-        }),
+      
+      const response = await api.post("/api/yatri/chat", {
+        monument: monumentRef.current.monument,
+        question: newQuestion,
       });
 
-      if (response.status === 401) {
-        setChatHistory((prev) => [...prev, { role: "ai", text: "Your session has expired. Please log in again." }]);
-        setChatLoading(false);
-        return;
-      }
-
-      const data = await response.json();
-      
-      const answer = data.success ? data.answer : "I couldn't find an answer to that.";
+      const answer = response.data.success ? response.data.answer : "I couldn't find an answer to that.";
       
       setChatHistory((prev) => [...prev, { role: "ai", text: answer }]);
       if (mode === "live") {
@@ -255,7 +231,11 @@ export default function AI() {
       }
 
     } catch (err) {
-      setChatHistory((prev) => [...prev, { role: "ai", text: "Network trouble on my end — please try again." }]);
+      if (err.response?.status === 401) {
+        setChatHistory((prev) => [...prev, { role: "ai", text: "Your session has expired. Please log in again." }]);
+      } else {
+        setChatHistory((prev) => [...prev, { role: "ai", text: "Network trouble on my end — please try again." }]);
+      }
     } finally {
       setChatLoading(false);
     }

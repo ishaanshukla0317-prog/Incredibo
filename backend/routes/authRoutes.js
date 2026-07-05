@@ -126,14 +126,15 @@ router.get("/refresh-token", async (req, res) => {
     res.status(403).json({ message: "Refresh token invalid" });
   }
 });
-
 router.get("/logout", async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
     if (refreshToken) {
       await Session.updateOne({ refreshTokenHash: hashToken(refreshToken) }, { revoked: true });
     }
-    res.clearCookie("refreshToken");
+
+    res.clearCookie("refreshToken", refreshCookieOptions()); 
+    
     res.json({ message: "Logged out successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
