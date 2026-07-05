@@ -7,8 +7,8 @@ const { generateOtp, getOtpHtml } = require("../utils/util");
 const otpmodel = require("../models/otp");
 const { authLimiter, otpLimiter } = require("../middleware/rateLimiter");
 
-const User = require("../models/User");
-const Session = require("../models/Session");
+const User = require("../models/user");
+const Session = require("../models/session");
 
 const router = express.Router();
 
